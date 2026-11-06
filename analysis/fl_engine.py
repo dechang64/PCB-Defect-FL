@@ -114,10 +114,19 @@ class DefectFLEngine:
         return total_loss / max(total, 1), correct / max(total, 1)
 
     @staticmethod
-    def _fedavg(params_list):
+    def _fedavg(params_list, client_data_sizes=None):
+        if not params_list:
+            raise ValueError("params_list is empty, cannot aggregate")
+        if client_data_sizes is not None and len(client_data_sizes) == len(params_list):
+            total = sum(client_data_sizes)
+            if total == 0:
+                raise ValueError("Total client_data_sizes is zero, cannot aggregate")
+            weights = [n / total for n in client_data_sizes]
+        else:
+            weights = [1.0 / len(params_list)] * len(params_list)
         avg = OrderedDict()
         for key in params_list[0]:
-            avg[key] = torch.stack([p[key] for p in params_list]).mean(dim=0)
+            avg[key] = sum(w * p[key] for w, p in zip(weights, params_list))
         return avg
 
     def run(self, features, labels, n_clients=3, rounds=10, progress_callback=None):
