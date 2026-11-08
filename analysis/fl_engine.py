@@ -1,3 +1,4 @@
+from __future__ import annotations
 # ── python/analysis/fl_engine.py ──
 """
 Defect-FL Federated Learning Engine
@@ -186,7 +187,8 @@ class DefectFLEngine:
                 client_params_list.append(params)
                 client_metrics.append({"client_id": cid, "train_loss": loss, "train_acc": acc, "n_samples": len(split_idx)})
 
-            global_params = self._fedavg(client_params_list)
+            client_data_sizes = [m["n_samples"] for m in client_metrics]
+            global_params = self._fedavg(client_params_list, client_data_sizes)
             self.classifier.load_state_dict(global_params)
             val_loss, val_acc = self._evaluate(self.classifier, val_X_t, val_y_t)
             elapsed = time.time() - t0
